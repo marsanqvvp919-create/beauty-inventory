@@ -501,12 +501,12 @@ export default function InventoryApp() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-4">
-          <div className="rounded-3xl border border-rose-100 bg-white/90 p-5 shadow-sm">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          <div className="rounded-3xl border border-rose-100 bg-white/90 p-4 shadow-sm sm:p-5">
             <p className="text-sm font-medium text-slate-500">危険在庫</p>
             <div className="mt-2 flex items-center gap-2">
               <TriangleAlert className="h-5 w-5 text-rose-500" />
-              <p className="text-2xl font-semibold text-rose-600">{alertItems.length}</p>
+              <p className="text-xl font-semibold text-rose-600 sm:text-2xl">{alertItems.length}</p>
             </div>
             <p className="mt-2 text-xs text-slate-400">補充確認が必要な製剤数</p>
           </div>
@@ -530,19 +530,19 @@ export default function InventoryApp() {
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.45fr_0.55fr]">
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.55fr)]">
+          <div className="min-w-0 space-y-4">
+            <div className="w-full min-w-0 max-w-full overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
               <div className="grid gap-3 md:grid-cols-5">
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm text-slate-600">検索</label>
-                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2">
+                  <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2">
                     <Search className="h-4 w-4 text-slate-400" />
                     <input
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
                       placeholder="製剤名・カテゴリー・仕入先・入荷予定・メモで検索"
-                      className="w-full border-none bg-transparent outline-none"
+                      className="min-w-0 w-full border-none bg-transparent outline-none"
                     />
                   </div>
                 </div>
@@ -552,7 +552,7 @@ export default function InventoryApp() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
                   >
                     <option value="すべて">すべて</option>
                     {categories.map((option) => (
@@ -568,7 +568,7 @@ export default function InventoryApp() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -583,7 +583,7 @@ export default function InventoryApp() {
                   <select
                     value={purchaseFilter}
                     onChange={(e) => setPurchaseFilter(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
                   >
                     <option value="すべて">すべて</option>
                     <option value="発注済みのみ">発注済みのみ</option>
@@ -668,7 +668,7 @@ export default function InventoryApp() {
               onCancelEdit={handleCancelEdit}
             />
 
-            <div className="rounded-3xl border border-sky-100 bg-white/90 p-5 shadow-sm">
+            <div className="w-full max-w-full overflow-hidden rounded-3xl border border-sky-100 bg-white/90 p-4 shadow-sm sm:p-5">
               <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">カテゴリー管理</h2>
                 <p className="mt-1 text-sm text-slate-500">
