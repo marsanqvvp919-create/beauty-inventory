@@ -62,117 +62,109 @@ export default function InventoryTable({
 }: Props) {
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4">
+      <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
         <h2 className="text-lg font-semibold text-slate-900">在庫一覧</h2>
         <p className="mt-1 text-sm text-slate-500">
           登録済みの美容製剤を一覧で確認・操作できます
         </p>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">製剤情報</th>
-              <th className="px-4 py-3 text-left font-medium">現在庫</th>
-              <th className="px-4 py-3 text-left font-medium">1日使用数</th>
-              <th className="px-4 py-3 text-left font-medium">危険数量</th>
-              <th className="px-4 py-3 text-left font-medium">状態</th>
-              <th className="px-4 py-3 text-left font-medium">操作</th>
-            </tr>
-          </thead>
+      {items.length === 0 ? (
+        <div className="px-4 py-10 text-center text-sm text-slate-500 sm:px-6">
+          条件に一致する製剤はありません。
+        </div>
+      ) : (
+        <>
+          {/* SP: カード縦並び */}
+          <div className="space-y-3 p-3 md:hidden">
+            {items.map((item) => {
+              const status = getStatus(item.stock, item.dangerLevel);
 
-          <tbody>
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
-                  条件に一致する製剤はありません。
-                </td>
-              </tr>
-            ) : (
-              items.map((item) => {
-                const status = getStatus(item.stock, item.dangerLevel);
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold text-slate-900">
+                        {item.name}
+                      </p>
+                      {item.category ? (
+                        <p className="mt-1 text-xs text-slate-400">{item.category}</p>
+                      ) : null}
+                    </div>
 
-                return (
-                  <tr
-                    key={item.id}
-                    className="border-t border-slate-100 align-top transition hover:bg-slate-50/80"
-                  >
-                    <td className="px-4 py-6">
-                      <div className="space-y-1.5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {item.name}
-                            </p>
-                            {item.category ? (
-                              <p className="mt-1 text-xs text-slate-400">
-                                {item.category}
-                              </p>
-                            ) : null}
-                          </div>
+                    {item.orderedQuantity > 0 ? (
+                      <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                        発注中
+                      </span>
+                    ) : null}
+                  </div>
 
-                          {item.orderedQuantity > 0 ? (
-                            <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
-                              発注中
-                            </span>
-                          ) : null}
-                        </div>
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs text-slate-500">
+                      仕入先: {item.vendor || "未設定"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      発注: {item.orderedQuantity} {item.unit}
+                    </p>
+                    <p className="text-xs font-medium text-indigo-500">
+                      入荷予定: {item.expectedArrival || "未定"}
+                    </p>
+                    {item.memo ? (
+                      <p className="break-words text-xs leading-relaxed text-slate-400">
+                        {item.memo}
+                      </p>
+                    ) : null}
+                  </div>
 
-                        <p className="text-xs text-slate-500">
-                          仕入先: {item.vendor || "未設定"}
-                        </p>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl bg-slate-50 px-3 py-2">
+                      <p className="text-[11px] text-slate-500">現在庫</p>
 
-                        <p className="text-xs text-slate-500">
-                          発注: {item.orderedQuantity} {item.unit}
-                          <span className="ml-2 font-medium text-indigo-500">
-                            入荷予定: {item.expectedArrival || "未定"}
-                          </span>
-                        </p>
-
-                        {item.memo ? (
-                          <p className="text-xs leading-relaxed text-slate-400">
-                            {item.memo}
-                          </p>
-                        ) : null}
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-6">
                       {editingId === item.id ? (
-                        <div className="flex items-center gap-2">
+                        <div className="mt-2 space-y-2">
                           <input
                             type="text"
                             inputMode="numeric"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-right outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-right outline-none focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
                           />
-                          <button
-                            type="button"
-                            onClick={() => onManualSave(item.id)}
-                            className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
-                          >
-                            <Save className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditValue("");
-                            }}
-                            className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onManualSave(item.id)}
+                              className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50"
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <Save className="h-3.5 w-3.5" />
+                                保存
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditValue("");
+                              }}
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50"
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                <X className="h-3.5 w-3.5" />
+                                戻す
+                              </span>
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div className="flex items-start gap-2">
-                          <div>
-                            <p className="font-medium text-slate-900">
+                        <div className="mt-1 flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">
                               {item.stock} {item.unit}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-[11px] text-slate-500">
                               {getStockGuide(item.stock, item.dangerLevel, item.unit)}
                             </p>
                           </div>
@@ -183,77 +175,255 @@ export default function InventoryTable({
                               setEditingId(item.id);
                               setEditValue(String(item.stock));
                             }}
-                            className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
+                            className="shrink-0 rounded-xl border border-slate-200 p-2 hover:bg-slate-50"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       )}
-                    </td>
+                    </div>
 
-                    <td className="px-4 py-6">
-                      <span className="text-slate-700">
-                        {item.dailyUsage} {item.unit}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-6">
-                      <span className="text-slate-700">
-                        {item.dangerLevel} {item.unit}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-6">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${status.className}`}
-                      >
-                        {status.label}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-6">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onUseStock(item.id)}
-                          className="rounded-xl bg-pink-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-pink-600"
+                    <div className="rounded-2xl bg-slate-50 px-3 py-2">
+                      <p className="text-[11px] text-slate-500">状態</p>
+                      <div className="mt-2">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${status.className}`}
                         >
-                          使用
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => onInbound(item.id)}
-                          className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                        >
-                          入庫
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => onStartEdit(item)}
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                        >
-                          編集
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => onDelete(item.id)}
-                          className="rounded-xl border border-rose-200 px-3 py-2 text-rose-600 transition hover:bg-rose-50"
-                          aria-label={`${item.name} を削除`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                          {status.label}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      <div className="mt-3 space-y-1 text-xs text-slate-600">
+                        <p>
+                          1日使用: {item.dailyUsage} {item.unit}
+                        </p>
+                        <p>
+                          危険数量: {item.dangerLevel} {item.unit}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onUseStock(item.id)}
+                      className="rounded-xl bg-pink-500 px-3 py-2 text-sm font-medium text-white hover:bg-pink-600"
+                    >
+                      使用
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onInbound(item.id)}
+                      className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50"
+                    >
+                      入庫
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onStartEdit(item)}
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      編集
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item.id)}
+                      className="rounded-xl border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <Trash2 className="h-4 w-4" />
+                        削除
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* md以上: テーブル表示 */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">製剤情報</th>
+                  <th className="px-4 py-3 text-left font-medium">現在庫</th>
+                  <th className="px-4 py-3 text-left font-medium">1日使用数</th>
+                  <th className="px-4 py-3 text-left font-medium">危険数量</th>
+                  <th className="px-4 py-3 text-left font-medium">状態</th>
+                  <th className="px-4 py-3 text-left font-medium">操作</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {items.map((item) => {
+                  const status = getStatus(item.stock, item.dangerLevel);
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-t border-slate-100 align-top transition hover:bg-slate-50/80"
+                    >
+                      <td className="px-4 py-6">
+                        <div className="space-y-1.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {item.name}
+                              </p>
+                              {item.category ? (
+                                <p className="mt-1 text-xs text-slate-400">
+                                  {item.category}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {item.orderedQuantity > 0 ? (
+                              <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-600">
+                                発注中
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <p className="text-xs text-slate-500">
+                            仕入先: {item.vendor || "未設定"}
+                          </p>
+
+                          <p className="text-xs text-slate-500">
+                            発注: {item.orderedQuantity} {item.unit}
+                            <span className="ml-2 font-medium text-indigo-500">
+                              入荷予定: {item.expectedArrival || "未定"}
+                            </span>
+                          </p>
+
+                          {item.memo ? (
+                            <p className="text-xs leading-relaxed text-slate-400">
+                              {item.memo}
+                            </p>
+                          ) : null}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-6">
+                        {editingId === item.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-right outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onManualSave(item.id)}
+                              className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
+                            >
+                              <Save className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditValue("");
+                              }}
+                              className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                {item.stock} {item.unit}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-500">
+                                {getStockGuide(item.stock, item.dangerLevel, item.unit)}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(item.id);
+                                setEditValue(String(item.stock));
+                              }}
+                              className="rounded-xl border border-slate-200 p-2 transition hover:bg-slate-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-6">
+                        <span className="text-slate-700">
+                          {item.dailyUsage} {item.unit}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-6">
+                        <span className="text-slate-700">
+                          {item.dangerLevel} {item.unit}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-6">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${status.className}`}
+                        >
+                          {status.label}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-6">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onUseStock(item.id)}
+                            className="rounded-xl bg-pink-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-pink-600"
+                          >
+                            使用
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onInbound(item.id)}
+                            className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                          >
+                            入庫
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onStartEdit(item)}
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            編集
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onDelete(item.id)}
+                            className="rounded-xl border border-rose-200 px-3 py-2 text-rose-600 transition hover:bg-rose-50"
+                            aria-label={`${item.name} を削除`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
