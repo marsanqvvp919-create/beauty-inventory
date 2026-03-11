@@ -38,6 +38,36 @@ import DisplaySettingsPanel from "./DisplaySettingsPanel";
 
 const DISPLAY_SETTINGS_STORAGE_KEY = "beauty_inventory_display_settings";
 
+const LETTERS = [
+  "すべて",
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+] as const;
+
 type DisplaySettings = {
   showDashboard: boolean;
   showAlerts: boolean;
@@ -92,6 +122,7 @@ export default function InventoryApp() {
   const [category, setCategory] = useState("すべて");
   const [statusFilter, setStatusFilter] = useState("すべて");
   const [purchaseFilter, setPurchaseFilter] = useState("すべて");
+  const [letterFilter, setLetterFilter] = useState<string>("すべて");
   const [sortOrder, setSortOrder] = useState("更新が新しい順");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -198,7 +229,18 @@ export default function InventoryApp() {
           ? item.orderedQuantity > 0
           : true;
 
-      return categoryMatch && keywordMatch && statusMatch && purchaseMatch;
+      const letterMatch =
+        letterFilter === "すべて"
+          ? true
+          : item.name.toUpperCase().startsWith(letterFilter);
+
+      return (
+        categoryMatch &&
+        keywordMatch &&
+        statusMatch &&
+        purchaseMatch &&
+        letterMatch
+      );
     });
 
     if (sortOrder === "在庫が少ない順") {
@@ -217,7 +259,15 @@ export default function InventoryApp() {
     }
 
     return result;
-  }, [items, keyword, category, statusFilter, purchaseFilter, sortOrder]);
+  }, [
+    items,
+    keyword,
+    category,
+    statusFilter,
+    purchaseFilter,
+    letterFilter,
+    sortOrder,
+  ]);
 
   const alertItems = useMemo(() => {
     return items
@@ -652,6 +702,26 @@ export default function InventoryApp() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-[#D9E2F2] pt-4">
+                <p className="mb-2 text-sm font-medium text-[#6B7280]">頭文字検索</p>
+                <div className="flex flex-wrap gap-2">
+                  {LETTERS.map((letter) => (
+                    <button
+                      key={letter}
+                      type="button"
+                      onClick={() => setLetterFilter(letter)}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                        letterFilter === letter
+                          ? "border-[#1D2E61] bg-[#EEF3FF] text-[#1D2E61]"
+                          : "border-[#D9E2F2] bg-white text-[#6B7280] hover:bg-[#EEF3FF]"
+                      }`}
+                    >
+                      {letter}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
