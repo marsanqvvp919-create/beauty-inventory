@@ -1,10 +1,20 @@
 import type { ExpectedArrivalOption, InventoryForm, InventoryItem, InventoryLog } from "../types/inventory";
 
 export const DEFAULT_CATEGORIES = [
-  "ヒアルロン酸",
-  "ボトックス",
+  "ヒアルロン酸フィラー",
+  "ボツリヌストキシン",
   "スキンブースター",
+  "コラーゲンブースター",
   "脂肪溶解注射",
+  "糸リフト",
+  "麻酔",
+  "ヒアルロニダーゼ",
+  "美容点滴",
+  "内服薬",
+  "外用薬",
+  "AGA治療",
+  "針・カニューレ",
+  "機器・備品",
   "その他",
 ] as const;
 
