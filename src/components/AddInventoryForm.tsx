@@ -19,16 +19,16 @@ export default function AddInventoryForm({
   onCancelEdit,
 }: Props) {
   const inputClassName =
-    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100";
+  "w-full min-w-0 rounded-2xl border border-[#D9E2F2] bg-white px-4 py-2.5 text-[#24324A] outline-none transition focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]";
   const textareaClassName =
-    "min-h-[96px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100";
+  "min-h-[96px] w-full rounded-2xl border border-[#D9E2F2] bg-white px-4 py-3 text-[#24324A] outline-none transition focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]";
 
   const hasCategories = categoryOptions.length > 0;
 
   return (
-    <div className="rounded-3xl border border-sky-100 bg-white/90 p-5 shadow-sm backdrop-blur">
+    <div className="rounded-3xl border border-[#D9E2F2] bg-white p-5 shadow-sm">
       <div className="mb-5">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-lg font-semibold text-[#1D2E61]">
           {isEditMode ? "製剤編集" : "新規製剤追加"}
         </h2>
         <p className="mt-1 text-sm text-slate-500">
@@ -227,7 +227,7 @@ export default function AddInventoryForm({
           <button
             type="button"
             onClick={onSubmit}
-            className="flex-1 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-3 text-sm font-medium text-white transition hover:from-pink-600 hover:to-rose-600"
+            className="flex-1 rounded-2xl bg-[#1D2E61] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#16244d]"
           >
             {isEditMode ? "更新する" : "追加する"}
           </button>

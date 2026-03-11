@@ -34,6 +34,25 @@ import InventoryTable from "./InventoryTable";
 import AddInventoryForm from "./AddInventoryForm";
 import AlertPanel from "./AlertPanel";
 import InventoryLogs from "./InventoryLogs";
+import DisplaySettingsPanel from "./DisplaySettingsPanel";
+
+const DISPLAY_SETTINGS_STORAGE_KEY = "beauty_inventory_display_settings";
+
+type DisplaySettings = {
+  showDashboard: boolean;
+  showAlerts: boolean;
+  showLogs: boolean;
+  showCategoryManager: boolean;
+  showAddForm: boolean;
+};
+
+const INITIAL_DISPLAY_SETTINGS: DisplaySettings = {
+  showDashboard: true,
+  showAlerts: true,
+  showLogs: true,
+  showCategoryManager: true,
+  showAddForm: true,
+};
 
 function normalizeNumericInput(value: string) {
   return value
@@ -79,9 +98,21 @@ export default function InventoryApp() {
   const [form, setForm] = useState<InventoryForm>(INITIAL_FORM);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
+  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
+    const saved = localStorage.getItem(DISPLAY_SETTINGS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : INITIAL_DISPLAY_SETTINGS;
+  });
+
   useEffect(() => {
     void loadAll();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      DISPLAY_SETTINGS_STORAGE_KEY,
+      JSON.stringify(displaySettings)
+    );
+  }, [displaySettings]);
 
   async function loadAll() {
     try {
@@ -111,7 +142,15 @@ export default function InventoryApp() {
     }
 
     const names = categoryRows.map((row) => row.name);
-    const merged = [...DEFAULT_CATEGORIES, ...names.filter((name) => !DEFAULT_CATEGORIES.includes(name as (typeof DEFAULT_CATEGORIES)[number]))];
+    const merged = [
+      ...DEFAULT_CATEGORIES,
+      ...names.filter(
+        (name) =>
+          !DEFAULT_CATEGORIES.includes(
+            name as (typeof DEFAULT_CATEGORIES)[number]
+          )
+      ),
+    ];
 
     return Array.from(new Set(merged));
   }, [categoryRows]);
@@ -482,10 +521,10 @@ export default function InventoryApp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-violet-50 p-4 md:p-8">
+      <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] p-4 md:p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
-            <p className="text-sm text-slate-500">読み込み中...</p>
+          <div className="rounded-3xl border border-[#D9E2F2] bg-white p-6 shadow-sm">
+            <p className="text-sm text-[#6B7280]">読み込み中...</p>
           </div>
         </div>
       </div>
@@ -493,7 +532,7 @@ export default function InventoryApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-violet-50 p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] p-4 md:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {errorMessage ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -501,58 +540,68 @@ export default function InventoryApp() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-          <div className="rounded-3xl border border-rose-100 bg-white/90 p-4 shadow-sm sm:p-5">
-            <p className="text-sm font-medium text-slate-500">危険在庫</p>
-            <div className="mt-2 flex items-center gap-2">
-              <TriangleAlert className="h-5 w-5 text-rose-500" />
-              <p className="text-xl font-semibold text-rose-600 sm:text-2xl">{alertItems.length}</p>
+        {displaySettings.showDashboard ? (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <div className="rounded-3xl border border-[#EAC11A]/35 bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-medium text-[#6B7280]">危険在庫</p>
+              <div className="mt-2 flex items-center gap-2">
+                <TriangleAlert className="h-5 w-5 text-[#EAC11A]" />
+                <p className="text-xl font-semibold text-[#1D2E61] sm:text-2xl">
+                  {alertItems.length}
+                </p>
+              </div>
+              <p className="mt-2 text-xs text-[#6B7280]">補充確認が必要な製剤数</p>
             </div>
-            <p className="mt-2 text-xs text-slate-400">補充確認が必要な製剤数</p>
-          </div>
 
-          <div className="rounded-3xl border border-amber-100 bg-white/90 p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">本日使用予定</p>
-            <p className="mt-2 text-2xl font-semibold text-amber-600">{totalUsage}</p>
-            <p className="mt-2 text-xs text-slate-400">1日使用数量の合計</p>
-          </div>
+            <div className="rounded-3xl border border-[#D9E2F2] bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-medium text-[#6B7280]">本日使用予定</p>
+              <p className="mt-2 text-xl font-semibold text-[#1D2E61] sm:text-2xl">
+                {totalUsage}
+              </p>
+              <p className="mt-2 text-xs text-[#6B7280]">1日使用数量の合計</p>
+            </div>
 
-          <div className="rounded-3xl border border-violet-100 bg-white/90 p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">総在庫数</p>
-            <p className="mt-2 text-2xl font-semibold text-violet-700">{totalStock}</p>
-            <p className="mt-2 text-xs text-slate-400">登録中の全在庫数</p>
-          </div>
+            <div className="rounded-3xl border border-[#D9E2F2] bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-medium text-[#6B7280]">総在庫数</p>
+              <p className="mt-2 text-xl font-semibold text-[#1D2E61] sm:text-2xl">
+                {totalStock}
+              </p>
+              <p className="mt-2 text-xs text-[#6B7280]">登録中の全在庫数</p>
+            </div>
 
-          <div className="rounded-3xl border border-pink-100 bg-white/90 p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">発注数量合計</p>
-            <p className="mt-2 text-2xl font-semibold text-pink-700">{totalOrdered}</p>
-            <p className="mt-2 text-xs text-slate-400">現在発注中の総数量</p>
+            <div className="rounded-3xl border border-[#D9E2F2] bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-sm font-medium text-[#6B7280]">発注数量合計</p>
+              <p className="mt-2 text-xl font-semibold text-[#1D2E61] sm:text-2xl">
+                {totalOrdered}
+              </p>
+              <p className="mt-2 text-xs text-[#6B7280]">現在発注中の総数量</p>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.55fr)]">
           <div className="min-w-0 space-y-4">
-            <div className="w-full min-w-0 max-w-full overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-sm">
-              <div className="grid gap-3 md:grid-cols-5">
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm text-slate-600">検索</label>
-                  <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2">
-                    <Search className="h-4 w-4 text-slate-400" />
+            <div className="w-full min-w-0 max-w-full overflow-hidden rounded-3xl border border-[#D9E2F2] bg-white p-4 shadow-sm">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+                <div className="min-w-0 md:col-span-2">
+                  <label className="mb-1 block text-sm text-[#6B7280]">検索</label>
+                  <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-[#D9E2F2] px-3 py-2">
+                    <Search className="h-4 w-4 shrink-0 text-[#6B7280]" />
                     <input
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
                       placeholder="製剤名・カテゴリー・仕入先・入荷予定・メモで検索"
-                      className="min-w-0 w-full border-none bg-transparent outline-none"
+                      className="min-w-0 w-full border-none bg-transparent text-[#24324A] outline-none"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm text-slate-600">カテゴリー</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-sm text-[#6B7280]">カテゴリー</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-[#D9E2F2] bg-white px-4 py-2 text-[#24324A] outline-none focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]"
                   >
                     <option value="すべて">すべて</option>
                     {categories.map((option) => (
@@ -563,12 +612,12 @@ export default function InventoryApp() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm text-slate-600">状態</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-sm text-[#6B7280]">状態</label>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-[#D9E2F2] bg-white px-4 py-2 text-[#24324A] outline-none focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]"
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -578,24 +627,24 @@ export default function InventoryApp() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm text-slate-600">発注</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-sm text-[#6B7280]">発注</label>
                   <select
                     value={purchaseFilter}
                     onChange={(e) => setPurchaseFilter(e.target.value)}
-                    className="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none"
+                    className="min-w-0 w-full rounded-2xl border border-[#D9E2F2] bg-white px-4 py-2 text-[#24324A] outline-none focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]"
                   >
                     <option value="すべて">すべて</option>
                     <option value="発注済みのみ">発注済みのみ</option>
                   </select>
                 </div>
 
-                <div className="md:col-span-5">
-                  <label className="mb-1 block text-sm text-slate-600">並び順</label>
+                <div className="min-w-0 md:col-span-5">
+                  <label className="mb-1 block text-sm text-[#6B7280]">並び順</label>
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 outline-none md:w-64"
+                    className="min-w-0 w-full rounded-2xl border border-[#D9E2F2] bg-white px-4 py-2 text-[#24324A] outline-none focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF] md:w-64"
                   >
                     {SORT_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -620,130 +669,145 @@ export default function InventoryApp() {
               onStartEdit={handleStartEdit}
             />
 
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setLogsOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-violet-500" />
-                    <h2 className="text-lg font-semibold text-slate-900">
-                      履歴一覧（{logs.length}件）
-                    </h2>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {logsOpen ? "クリックで閉じる" : "クリックで展開する"}
-                  </p>
-                  {!logsOpen && latestLogPreview.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {latestLogPreview.map((log) => (
-                        <p key={log.id} className="text-xs text-slate-500">
-                          ・{log.itemName}：{log.detail}
-                        </p>
-                      ))}
+            {displaySettings.showLogs ? (
+              <div className="overflow-hidden rounded-3xl border border-[#D9E2F2] bg-white shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setLogsOpen((prev) => !prev)}
+                  className="flex w-full items-center justify-between px-5 py-4 text-left"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 shrink-0 text-[#EAC11A]" />
+                      <h2 className="text-lg font-semibold text-[#1D2E61]">
+                        履歴一覧（{logs.length}件）
+                      </h2>
                     </div>
+                    <p className="mt-1 text-sm text-[#6B7280]">
+                      {logsOpen ? "クリックで閉じる" : "クリックで展開する"}
+                    </p>
+                    {!logsOpen && latestLogPreview.length > 0 ? (
+                      <div className="mt-2 space-y-1">
+                        {latestLogPreview.map((log) => (
+                          <p key={log.id} className="truncate text-xs text-[#6B7280]">
+                            ・{log.itemName}：{log.detail}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {logsOpen ? (
+                    <ChevronUp className="h-5 w-5 shrink-0 text-[#6B7280]" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 shrink-0 text-[#6B7280]" />
                   )}
-                </div>
+                </button>
 
-                {logsOpen ? (
-                  <ChevronUp className="h-5 w-5 text-slate-500" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 text-slate-500" />
-                )}
-              </button>
-
-              {logsOpen && <InventoryLogs logs={logs} />}
-            </div>
+                {logsOpen ? <InventoryLogs logs={logs} /> : null}
+              </div>
+            ) : null}
           </div>
 
-          <div className="space-y-4">
-            <AddInventoryForm
-              form={form}
-              categoryOptions={categories}
-              isEditMode={!!editingItemId}
-              setForm={setForm}
-              onSubmit={handleSubmitForm}
-              onCancelEdit={handleCancelEdit}
+          <div className="min-w-0 space-y-4">
+            <DisplaySettingsPanel
+              settings={displaySettings}
+              onChange={setDisplaySettings}
             />
 
-            <div className="w-full max-w-full overflow-hidden rounded-3xl border border-sky-100 bg-white/90 p-4 shadow-sm sm:p-5">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-slate-900">カテゴリー管理</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  カテゴリーを追加・管理できます。標準カテゴリーは削除できません。
-                </p>
-              </div>
+            {displaySettings.showAddForm ? (
+              <AddInventoryForm
+                form={form}
+                categoryOptions={categories}
+                isEditMode={!!editingItemId}
+                setForm={setForm}
+                onSubmit={handleSubmitForm}
+                onCancelEdit={handleCancelEdit}
+              />
+            ) : null}
 
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="カテゴリー追加"
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleAddCategory(newCategory);
-                      setNewCategory("");
-                    }}
-                    className="rounded-xl bg-sky-500 px-3 py-2 text-sm text-white hover:bg-sky-600"
-                  >
-                    追加
-                  </button>
+            {displaySettings.showCategoryManager ? (
+              <div className="rounded-3xl border border-[#D9E2F2] bg-white p-5 shadow-sm">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold text-[#1D2E61]">
+                    カテゴリー管理
+                  </h2>
+                  <p className="mt-1 text-sm text-[#6B7280]">
+                    カテゴリーを追加・管理できます。標準カテゴリーは削除できません。
+                  </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  {customCategories.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      追加したカテゴリーはまだありません。
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {customCategories.map((categoryRow) => {
-                        const categoryName = categoryRow.name;
-                        const count = categoryItemCounts[categoryName] ?? 0;
-                        const inUse = count > 0;
+                <div className="space-y-4">
+                  <div className="flex min-w-0 gap-2">
+                    <input
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="カテゴリー追加"
+                      className="min-w-0 flex-1 rounded-xl border border-[#D9E2F2] px-3 py-2 text-sm text-[#24324A] outline-none focus:border-[#1D2E61] focus:ring-4 focus:ring-[#EEF3FF]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleAddCategory(newCategory);
+                        setNewCategory("");
+                      }}
+                      className="rounded-xl bg-[#1D2E61] px-3 py-2 text-sm text-white transition hover:bg-[#16244d]"
+                    >
+                      追加
+                    </button>
+                  </div>
 
-                        return (
-                          <div
-                            key={categoryRow.id}
-                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2"
-                          >
-                            <div>
-                              <p className="text-sm font-medium text-slate-900">
-                                {categoryName}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                使用中製剤数: {count}
-                              </p>
-                            </div>
+                  <div className="rounded-2xl border border-[#D9E2F2] bg-[#F8FAFC] p-4">
+                    {customCategories.length === 0 ? (
+                      <p className="text-sm text-[#6B7280]">
+                        追加したカテゴリーはまだありません。
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {customCategories.map((categoryRow) => {
+                          const categoryName = categoryRow.name;
+                          const count = categoryItemCounts[categoryName] ?? 0;
+                          const inUse = count > 0;
 
-                            <button
-                              type="button"
-                              disabled={inUse}
-                              onClick={() => void handleDeleteCategory(categoryName)}
-                              className={`rounded-xl px-3 py-2 text-sm ${
-                                inUse
-                                  ? "cursor-not-allowed border border-slate-200 text-slate-300"
-                                  : "border border-rose-200 text-rose-600 hover:bg-rose-50"
-                              }`}
+                          return (
+                            <div
+                              key={categoryRow.id}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-[#D9E2F2] bg-white px-3 py-2"
                             >
-                              削除
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-[#1D2E61]">
+                                  {categoryName}
+                                </p>
+                                <p className="text-xs text-[#6B7280]">
+                                  使用中製剤数: {count}
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                disabled={inUse}
+                                onClick={() => void handleDeleteCategory(categoryName)}
+                                className={`shrink-0 rounded-xl px-3 py-2 text-sm ${
+                                  inUse
+                                    ? "cursor-not-allowed border border-slate-200 text-slate-300"
+                                    : "border border-[#EAC11A]/40 text-[#9A7B00] hover:bg-[#FFF8DF]"
+                                }`}
+                              >
+                                削除
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : null}
 
-            <AlertPanel alertItems={alertItems} onInboundQuick={handleInbound} />
+            {displaySettings.showAlerts ? (
+              <AlertPanel alertItems={alertItems} onInboundQuick={handleInbound} />
+            ) : null}
           </div>
         </div>
       </div>

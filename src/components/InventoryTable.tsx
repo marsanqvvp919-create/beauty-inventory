@@ -91,7 +91,7 @@ function MobileInventoryCard({
               {item.name}
             </p>
             {item.orderedQuantity > 0 ? (
-              <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+              <span className="shrink-0 rounded-full border border-[#EAC11A]/30 bg-[#FFF8DF] px-2 py-0.5 text-[10px] font-medium text-[#9A7B00]">
                 発注中
               </span>
             ) : null}
@@ -138,7 +138,7 @@ function MobileInventoryCard({
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-slate-50 px-3 py-3">
+            <div className="rounded-2xl bg-[#F8FAFC] px-3 py-3">
               <p className="text-[11px] text-slate-500">現在庫</p>
 
               {editingId === item.id ? (
@@ -225,7 +225,7 @@ function MobileInventoryCard({
             <button
               type="button"
               onClick={() => onUseStock(item.id)}
-              className="rounded-xl bg-pink-500 px-3 py-3 text-sm font-medium text-white hover:bg-pink-600"
+              className="rounded-xl bg-[#1D2E61] px-3 py-3 text-sm font-medium text-white hover:bg-[#16244d]"
             >
               使用
             </button>
@@ -233,7 +233,7 @@ function MobileInventoryCard({
             <button
               type="button"
               onClick={() => onInbound(item.id)}
-              className="rounded-xl border border-violet-200 px-3 py-3 text-sm font-medium text-violet-700 hover:bg-violet-50"
+              className="rounded-xl border border-[#1D2E61]/20 px-3 py-3 text-sm font-medium text-[#1D2E61] hover:bg-[#EEF3FF]"
             >
               入庫
             </button>
@@ -278,9 +278,9 @@ export default function InventoryTable({
   const [openItemId, setOpenItemId] = useState<string | null>(null);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-sm">
+    <div className="overflow-hidden rounded-3xl border border-[#D9E2F2] bg-white shadow-sm">
       <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
-        <h2 className="text-lg font-semibold text-slate-900">在庫一覧</h2>
+        <h2 className="text-lg font-semibold text-[#1D2E61]">在庫一覧</h2>
         <p className="mt-1 text-sm text-slate-500">
           登録済みの美容製剤を一覧で確認・操作できます
         </p>
