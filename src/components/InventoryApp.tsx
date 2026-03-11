@@ -184,7 +184,7 @@ export default function InventoryApp() {
   const [statusFilter, setStatusFilter] = useState("すべて");
   const [purchaseFilter, setPurchaseFilter] = useState("すべて");
   const [letterFilter, setLetterFilter] = useState<string>("すべて");
-  const [sortOrder, setSortOrder] = useState("更新が新しい順");
+  const [sortOrder, setSortOrder] = useState("製剤名順");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [form, setForm] = useState<InventoryForm>(INITIAL_FORM);
