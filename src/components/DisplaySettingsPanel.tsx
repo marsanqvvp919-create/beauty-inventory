@@ -4,6 +4,7 @@ type DisplaySettings = {
   showLogs: boolean;
   showCategoryManager: boolean;
   showAddForm: boolean;
+  showTrash: boolean;
 };
 
 type Props = {
@@ -40,6 +41,11 @@ const settingItems: Array<{
     key: "showAddForm",
     label: "新規追加フォーム",
     description: "製剤追加・編集フォームを表示します",
+  },
+  {
+    key: "showTrash",
+    label: "削除済み一覧",
+    description: "復元・完全削除できるゴミ箱を表示します",
   },
 ];
 

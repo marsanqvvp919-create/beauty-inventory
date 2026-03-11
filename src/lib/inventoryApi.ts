@@ -1,15 +1,18 @@
 import { supabase } from "./supabase";
 import type {
+  DeletedInventoryItem,
   InventoryCategory,
   InventoryItem,
   InventoryLog,
 } from "../types/inventory";
 import {
   mapDbCategoryToCategory,
+  mapDbDeletedItemToDeletedItem,
   mapDbItemToItem,
   mapDbLogToLog,
   mapItemToDbInsert,
   mapItemToDbUpdate,
+  mapItemToDeletedDbInsert,
 } from "./inventoryMappers";
 
 export async function fetchInventoryItems(): Promise<InventoryItem[]> {
@@ -21,6 +24,17 @@ export async function fetchInventoryItems(): Promise<InventoryItem[]> {
   if (error) throw error;
 
   return (data ?? []).map(mapDbItemToItem);
+}
+
+export async function fetchDeletedInventoryItems(): Promise<DeletedInventoryItem[]> {
+  const { data, error } = await supabase
+    .from("deleted_inventory_items")
+    .select("*")
+    .order("deleted_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map(mapDbDeletedItemToDeletedItem);
 }
 
 export async function fetchInventoryLogs(): Promise<InventoryLog[]> {
@@ -77,6 +91,60 @@ export async function updateInventoryItem(
 
 export async function deleteInventoryItem(id: string): Promise<void> {
   const { error } = await supabase.from("inventory_items").delete().eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function archiveDeletedInventoryItem(
+  item: InventoryItem
+): Promise<DeletedInventoryItem> {
+  const { data, error } = await supabase
+    .from("deleted_inventory_items")
+    .insert(mapItemToDeletedDbInsert(item))
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return mapDbDeletedItemToDeletedItem(data);
+}
+
+export async function restoreDeletedInventoryItem(
+  deletedItem: DeletedInventoryItem
+): Promise<InventoryItem> {
+  const insertPayload = {
+    name: deletedItem.name,
+    category: deletedItem.category,
+    stock: deletedItem.stock,
+    danger_level: deletedItem.dangerLevel,
+    daily_usage: deletedItem.dailyUsage,
+    ordered_quantity: deletedItem.orderedQuantity,
+    expected_arrival: deletedItem.expectedArrival,
+    unit: deletedItem.unit,
+    vendor: deletedItem.vendor,
+    memo: deletedItem.memo,
+    created_at: deletedItem.createdAt,
+    updated_at: deletedItem.updatedAt,
+  };
+
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .insert(insertPayload)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return mapDbItemToItem(data);
+}
+
+export async function permanentlyDeleteDeletedInventoryItem(
+  id: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("deleted_inventory_items")
+    .delete()
+    .eq("id", id);
 
   if (error) throw error;
 }

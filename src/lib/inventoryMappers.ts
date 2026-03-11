@@ -1,4 +1,5 @@
 import type {
+  DeletedInventoryItem,
   InventoryCategory,
   InventoryItem,
   InventoryLog,
@@ -18,6 +19,24 @@ type DbInventoryItem = {
   memo: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type DbDeletedInventoryItem = {
+  id: string;
+  original_item_id: string | null;
+  name: string;
+  category: string;
+  stock: number | string | null;
+  danger_level: number | string | null;
+  daily_usage: number | string | null;
+  ordered_quantity: number | string | null;
+  expected_arrival: string | null;
+  unit: string | null;
+  vendor: string | null;
+  memo: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string;
 };
 
 type DbInventoryLog = {
@@ -53,6 +72,29 @@ export function mapDbItemToItem(row: DbInventoryItem): InventoryItem {
     memo: row.memo ?? "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export function mapDbDeletedItemToDeletedItem(
+  row: DbDeletedInventoryItem
+): DeletedInventoryItem {
+  return {
+    id: row.id,
+    originalItemId: row.original_item_id,
+    name: row.name,
+    category: row.category,
+    stock: Number(row.stock ?? 0),
+    dangerLevel: Number(row.danger_level ?? 0),
+    dailyUsage: Number(row.daily_usage ?? 0),
+    orderedQuantity: Number(row.ordered_quantity ?? 0),
+    expectedArrival:
+      row.expected_arrival as DeletedInventoryItem["expectedArrival"],
+    unit: row.unit ?? "本",
+    vendor: row.vendor ?? "",
+    memo: row.memo ?? "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at,
   };
 }
 
@@ -92,13 +134,34 @@ export function mapItemToDbUpdate(item: Partial<InventoryItem>) {
   };
 }
 
+export function mapItemToDeletedDbInsert(item: InventoryItem) {
+  return {
+    original_item_id: item.id,
+    name: item.name,
+    category: item.category,
+    stock: item.stock,
+    danger_level: item.dangerLevel,
+    daily_usage: item.dailyUsage,
+    ordered_quantity: item.orderedQuantity,
+    expected_arrival: item.expectedArrival,
+    unit: item.unit,
+    vendor: item.vendor,
+    memo: item.memo,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+  };
+}
+
 export function mapDbLogToLog(row: DbInventoryLog): InventoryLog {
   return {
     id: row.id,
     itemId: row.item_id,
     itemName: row.item_name,
     action: row.action as InventoryLog["action"],
-    quantity: row.quantity !== null && row.quantity !== undefined ? Number(row.quantity) : 0,
+    quantity:
+      row.quantity !== null && row.quantity !== undefined
+        ? Number(row.quantity)
+        : 0,
     unit: row.unit ?? "",
     detail: row.detail ?? "",
     createdAt: row.created_at,

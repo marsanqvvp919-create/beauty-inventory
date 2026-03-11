@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,6 +13,7 @@ import {
   STATUS_OPTIONS,
 } from "../data/inventory";
 import type {
+  DeletedInventoryItem,
   InventoryCategory,
   InventoryForm,
   InventoryItem,
@@ -20,14 +21,18 @@ import type {
   InventoryStatus,
 } from "../types/inventory";
 import {
+  archiveDeletedInventoryItem,
   createInventoryCategory,
   createInventoryItem,
   createInventoryLog,
   deleteInventoryCategory,
   deleteInventoryItem,
+  fetchDeletedInventoryItems,
   fetchInventoryCategories,
   fetchInventoryItems,
   fetchInventoryLogs,
+  permanentlyDeleteDeletedInventoryItem,
+  restoreDeletedInventoryItem,
   updateInventoryItem,
 } from "../lib/inventoryApi";
 import InventoryTable from "./InventoryTable";
@@ -35,38 +40,10 @@ import AddInventoryForm from "./AddInventoryForm";
 import AlertPanel from "./AlertPanel";
 import InventoryLogs from "./InventoryLogs";
 import DisplaySettingsPanel from "./DisplaySettingsPanel";
+import TrashPanel from "./TrashPanel";
 
 const DISPLAY_SETTINGS_STORAGE_KEY = "beauty_inventory_display_settings";
-
-const LETTERS = [
-  "すべて",
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "U",
-  "V",
-  "W",
-  "X",
-  "Y",
-  "Z",
-] as const;
+const DELETE_UNDO_MS = 8000;
 
 type DisplaySettings = {
   showDashboard: boolean;
@@ -74,6 +51,12 @@ type DisplaySettings = {
   showLogs: boolean;
   showCategoryManager: boolean;
   showAddForm: boolean;
+  showTrash: boolean;
+};
+
+type PendingDelete = {
+  item: InventoryItem;
+  expiresAt: number;
 };
 
 const INITIAL_DISPLAY_SETTINGS: DisplaySettings = {
@@ -82,6 +65,7 @@ const INITIAL_DISPLAY_SETTINGS: DisplaySettings = {
   showLogs: true,
   showCategoryManager: true,
   showAddForm: true,
+  showTrash: true,
 };
 
 function normalizeNumericInput(value: string) {
@@ -116,26 +100,47 @@ export default function InventoryApp() {
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [logs, setLogs] = useState<InventoryLog[]>([]);
+  const [deletedItems, setDeletedItems] = useState<DeletedInventoryItem[]>([]);
   const [categoryRows, setCategoryRows] = useState<InventoryCategory[]>([]);
 
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState("すべて");
   const [statusFilter, setStatusFilter] = useState("すべて");
   const [purchaseFilter, setPurchaseFilter] = useState("すべて");
-  const [letterFilter, setLetterFilter] = useState<string>("すべて");
   const [sortOrder, setSortOrder] = useState("更新が新しい順");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [form, setForm] = useState<InventoryForm>(INITIAL_FORM);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+
+  const pendingDeleteTimerRef = useRef<number | null>(null);
+
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
     const saved = localStorage.getItem(DISPLAY_SETTINGS_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_DISPLAY_SETTINGS;
+
+    if (!saved) return INITIAL_DISPLAY_SETTINGS;
+
+    try {
+      const parsed = JSON.parse(saved) as Partial<DisplaySettings>;
+      return {
+        ...INITIAL_DISPLAY_SETTINGS,
+        ...parsed,
+      };
+    } catch {
+      return INITIAL_DISPLAY_SETTINGS;
+    }
   });
 
   useEffect(() => {
     void loadAll();
+
+    return () => {
+      if (pendingDeleteTimerRef.current) {
+        window.clearTimeout(pendingDeleteTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -150,15 +155,18 @@ export default function InventoryApp() {
       setLoading(true);
       setErrorMessage("");
 
-      const [itemsData, logsData, categoriesData] = await Promise.all([
-        fetchInventoryItems(),
-        fetchInventoryLogs(),
-        fetchInventoryCategories(),
-      ]);
+      const [itemsData, logsData, categoriesData, deletedItemsData] =
+        await Promise.all([
+          fetchInventoryItems(),
+          fetchInventoryLogs(),
+          fetchInventoryCategories(),
+          fetchDeletedInventoryItems(),
+        ]);
 
       setItems(itemsData);
       setLogs(logsData);
       setCategoryRows(categoriesData);
+      setDeletedItems(deletedItemsData);
     } catch (error) {
       console.error(error);
       setErrorMessage("Supabase からのデータ取得に失敗しました。");
@@ -229,18 +237,7 @@ export default function InventoryApp() {
           ? item.orderedQuantity > 0
           : true;
 
-      const letterMatch =
-        letterFilter === "すべて"
-          ? true
-          : item.name.toUpperCase().startsWith(letterFilter);
-
-      return (
-        categoryMatch &&
-        keywordMatch &&
-        statusMatch &&
-        purchaseMatch &&
-        letterMatch
-      );
+      return categoryMatch && keywordMatch && statusMatch && purchaseMatch;
     });
 
     if (sortOrder === "在庫が少ない順") {
@@ -259,15 +256,7 @@ export default function InventoryApp() {
     }
 
     return result;
-  }, [
-    items,
-    keyword,
-    category,
-    statusFilter,
-    purchaseFilter,
-    letterFilter,
-    sortOrder,
-  ]);
+  }, [items, keyword, category, statusFilter, purchaseFilter, sortOrder]);
 
   const alertItems = useMemo(() => {
     return items
@@ -538,34 +527,118 @@ export default function InventoryApp() {
     setForm(INITIAL_FORM);
   };
 
+  async function finalizePendingDelete(targetItem: InventoryItem) {
+    try {
+      const archived = await archiveDeletedInventoryItem(targetItem);
+      await deleteInventoryItem(targetItem.id);
+
+      setDeletedItems((prev) => [archived, ...prev]);
+
+      await addLog({
+        itemId: targetItem.id,
+        itemName: targetItem.name,
+        action: "delete",
+        quantity: 0,
+        unit: targetItem.unit,
+        detail: "製剤を削除しました",
+      });
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("製剤削除に失敗しました。");
+      setItems((prev) => [targetItem, ...prev]);
+    } finally {
+      setPendingDelete(null);
+      if (pendingDeleteTimerRef.current) {
+        window.clearTimeout(pendingDeleteTimerRef.current);
+        pendingDeleteTimerRef.current = null;
+      }
+    }
+  }
+
   const handleDelete = async (id: string) => {
     const target = items.find((item) => item.id === id);
     if (!target) return;
 
-    const ok = window.confirm(`「${target.name}」を削除しますか？`);
+    const ok = window.confirm(
+      `「${target.name}」を削除しますか？\n削除後もしばらくは元に戻せます。`
+    );
+    if (!ok) return;
+
+    if (pendingDelete) {
+      await finalizePendingDelete(pendingDelete.item);
+    }
+
+    setItems((prev) => prev.filter((item) => item.id !== id));
+
+    if (editingItemId === id) {
+      setEditingItemId(null);
+      setForm(INITIAL_FORM);
+    }
+
+    const expiresAt = Date.now() + DELETE_UNDO_MS;
+    setPendingDelete({
+      item: target,
+      expiresAt,
+    });
+
+    pendingDeleteTimerRef.current = window.setTimeout(() => {
+      void finalizePendingDelete(target);
+    }, DELETE_UNDO_MS);
+  };
+
+  const handleUndoDelete = () => {
+    if (!pendingDelete) return;
+
+    if (pendingDeleteTimerRef.current) {
+      window.clearTimeout(pendingDeleteTimerRef.current);
+      pendingDeleteTimerRef.current = null;
+    }
+
+    setItems((prev) => [pendingDelete.item, ...prev]);
+    setPendingDelete(null);
+  };
+
+  const handleRestoreDeletedItem = async (item: DeletedInventoryItem) => {
+    try {
+      const restored = await restoreDeletedInventoryItem(item);
+      await permanentlyDeleteDeletedInventoryItem(item.id);
+
+      setItems((prev) => [restored, ...prev]);
+      setDeletedItems((prev) => prev.filter((row) => row.id !== item.id));
+
+      await addLog({
+        itemId: restored.id,
+        itemName: restored.name,
+        action: "restore",
+        quantity: restored.stock,
+        unit: restored.unit,
+        detail: "削除済み一覧から復元しました",
+      });
+    } catch (error) {
+      console.error(error);
+      setErrorMessage("製剤の復元に失敗しました。");
+    }
+  };
+
+  const handlePermanentDeleteDeletedItem = async (item: DeletedInventoryItem) => {
+    const ok = window.confirm(`「${item.name}」を完全削除しますか？`);
     if (!ok) return;
 
     try {
-      await deleteInventoryItem(id);
-
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      await permanentlyDeleteDeletedInventoryItem(item.id);
+      setDeletedItems((prev) => prev.filter((row) => row.id !== item.id));
 
       await addLog({
-        itemId: target.id,
-        itemName: target.name,
-        action: "delete",
+        itemId: item.originalItemId,
+        itemName: item.name,
+        action: "permanent_delete",
         quantity: 0,
-        unit: target.unit,
-        detail: "製剤を削除しました",
+        unit: item.unit,
+        detail: "削除済み一覧から完全削除しました",
       });
-
-      if (editingItemId === id) {
-        setEditingItemId(null);
-        setForm(INITIAL_FORM);
-      }
     } catch (error) {
       console.error(error);
-      setErrorMessage("製剤削除に失敗しました。");
+      setErrorMessage("完全削除に失敗しました。");
     }
   };
 
@@ -702,26 +775,6 @@ export default function InventoryApp() {
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div className="mt-4 border-t border-[#D9E2F2] pt-4">
-                <p className="mb-2 text-sm font-medium text-[#6B7280]">頭文字検索</p>
-                <div className="flex flex-wrap gap-2">
-                  {LETTERS.map((letter) => (
-                    <button
-                      key={letter}
-                      type="button"
-                      onClick={() => setLetterFilter(letter)}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
-                        letterFilter === letter
-                          ? "border-[#1D2E61] bg-[#EEF3FF] text-[#1D2E61]"
-                          : "border-[#D9E2F2] bg-white text-[#6B7280] hover:bg-[#EEF3FF]"
-                      }`}
-                    >
-                      {letter}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>
@@ -878,9 +931,34 @@ export default function InventoryApp() {
             {displaySettings.showAlerts ? (
               <AlertPanel alertItems={alertItems} onInboundQuick={handleInbound} />
             ) : null}
+
+            {displaySettings.showTrash ? (
+              <TrashPanel
+                items={deletedItems}
+                onRestore={handleRestoreDeletedItem}
+                onPermanentDelete={handlePermanentDeleteDeletedItem}
+              />
+            ) : null}
           </div>
         </div>
       </div>
+
+      {pendingDelete ? (
+        <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-xl rounded-2xl border border-[#D9E2F2] bg-white px-4 py-3 shadow-lg">
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-sm text-[#1D2E61]">
+              {pendingDelete.item.name} を削除しました
+            </p>
+            <button
+              type="button"
+              onClick={handleUndoDelete}
+              className="shrink-0 rounded-xl bg-[#1D2E61] px-3 py-2 text-xs font-medium text-white hover:bg-[#16244d]"
+            >
+              元に戻す
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

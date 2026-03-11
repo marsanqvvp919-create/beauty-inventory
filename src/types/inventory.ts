@@ -18,7 +18,9 @@ export type InventoryAction =
   | "use"
   | "inbound"
   | "adjust"
-  | "delete";
+  | "delete"
+  | "restore"
+  | "permanent_delete";
 
 export interface InventoryItem {
   id: string;
@@ -34,6 +36,24 @@ export interface InventoryItem {
   memo: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DeletedInventoryItem {
+  id: string;
+  originalItemId: string | null;
+  name: string;
+  category: string;
+  stock: number;
+  dangerLevel: number;
+  dailyUsage: number;
+  orderedQuantity: number;
+  expectedArrival: ExpectedArrivalOption;
+  unit: string;
+  vendor: string;
+  memo: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string;
 }
 
 export interface InventoryLog {
